@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>留言表單 | Notion 範例</title>
+  <style>
+    :root {
+      --bg: #f6f6f4;
+      --card: #ffffff;
+      --text: #1f1f1f;
+      --muted: #6b6b6b;
+      --border: #e2e2de;
+      --accent: #2563eb;
+      --accent-text: #ffffff;
+      --ok: #15803d;
+      --error: #b91c1c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161616;
+        --card: #202020;
+        --text: #eeeeee;
+        --muted: #a0a0a0;
+        --border: #333333;
+        --accent: #3b82f6;
+        --ok: #4ade80;
+        --error: #f87171;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 16px 64px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      line-height: 1.6;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { margin: 0 0 4px; font-size: 28px; }
+    .sub { margin: 0 0 24px; color: var(--muted); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h2 { margin: 0 0 12px; font-size: 18px; }
+    label { display: block; margin: 12px 0 4px; font-size: 14px; font-weight: 600; }
+    input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+    }
+    input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    textarea { min-height: 100px; resize: vertical; }
+    .hint { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+    button {
+      margin-top: 16px;
+      padding: 10px 20px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    button.ghost {
+      margin: 0;
+      padding: 6px 12px;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+    #status { margin: 12px 0 0; min-height: 1.5em; font-size: 14px; }
+    #status.ok { color: var(--ok); }
+    #status.error { color: var(--error); }
+    .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .head h2 { margin: 0; }
+    .msg { padding: 12px 0; border-top: 1px solid var(--border); }
+    .msg:first-child { border-top: 0; }
+    .msg .who { font-weight: 600; }
+    .msg .company { color: var(--muted); font-size: 13px; margin-left: 6px; }
+    .msg .text { margin: 4px 0 0; white-space: pre-wrap; word-break: break-word; }
+    .empty { color: var(--muted); }
+    details summary { cursor: pointer; font-weight: 600; font-size: 18px; }
+    details ol, details ul { margin: 12px 0 0; padding-left: 22px; }
+    details li { margin-bottom: 6px; }
+    code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>留言表單</h1>
+    <p class="sub">填寫後送出，資料會自動寫入 Notion 資料庫。</p>
+
+    <!-- 使用說明 -->
+    <div class="card">
+      <details open>
+        <summary>使用說明</summary>
+        <ol>
+          <li>填寫「姓名」與「留言」，「公司名稱」為選填。</li>
+          <li>按下「送出留言」，等待畫面顯示綠色的成功訊息。</li>
+          <li>到 Notion 的「留言表單」資料庫，就能看到剛剛新增的一列。</li>
+          <li>下方「最新留言」會從 Notion 讀回最近 10 筆，也可按「重新整理」更新。</li>
+        </ol>
+        <ul>
+          <li>送出需要幾秒鐘，請不要重複點擊按鈕。</li>
+          <li>留言最多 100 字（若 Notion 的 Message 欄位為 Select 型別有此限制）。</li>
+          <li>資料流程：網頁 → Google Apps Script → Notion API → 資料庫。</li>
+        </ul>
+      </details>
+    </div>
+
+    <!-- 表單 -->
+    <div class="card">
+      <h2>發表留言</h2>
+      <form id="form">
+        <label for="name">姓名 *</label>
+        <input id="name" required maxlength="50" placeholder="例如：王小明">
+
+        <label for="company">公司名稱</label>
+        <input id="company" maxlength="100" placeholder="例如：Believe">
+
+        <label for="message">留言 *</label>
+        <textarea id="message" required maxlength="100" placeholder="想說的話…"></textarea>
+        <p class="hint">最多 100 字</p>
+
+        <button id="submit" type="submit">送出留言</button>
+        <p id="status" role="status"></p>
+      </form>
+    </div>
+
+    <!-- 最新留言 -->
+    <div class="card">
+      <div class="head">
+        <h2>最新留言</h2>
+        <button id="refresh" class="ghost" type="button">重新整理</button>
+      </div>
+      <div id="list" class="empty">載入中…</div>
+    </div>
+  </div>
+
+  <script>
+    // Apps Script 網頁應用程式網址（部署後取得）
+    const API_URL = "https://script.google.com/macros/s/AKfycbw5XAYLCxU1nR0ojSe1WhWkRppNbXJUkzweo71vGCNJfxy4C7FDtc5w1Or1xui12r8epw/exec";
+
+    const form = document.getElementById("form");
+    const submitBtn = document.getElementById("submit");
+    const statusEl = document.getElementById("status");
+    const listEl = document.getElementById("list");
+
+    function setStatus(text, type) {
+      statusEl.textContent = text;
+      statusEl.className = type || "";
+    }
+
+    // 送出留言
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      setStatus("送出中，請稍候…", "");
+
+      try {
+        // 不手動設定 Content-Type，避免瀏覽器發出預檢請求而被 Apps Script 擋下
+        const res = await fetch(API_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("name").value.trim(),
+            company: document.getElementById("company").value.trim(),
+            message: document.getElementById("message").value.trim(),
+          }),
+        });
+        const result = await res.json();
+        if (!result.ok) throw new Error("伺服器回傳失敗");
+
+        setStatus("送出成功！已寫入 Notion。", "ok");
+        form.reset();
+        loadMessages();
+      } catch (err) {
+        setStatus("送出失敗：" + err.message + "（請查看使用說明或 Apps Script 的執行記錄）", "error");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // 讀取最新留言
+    async function loadMessages() {
+      listEl.className = "empty";
+      listEl.textContent = "載入中…";
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const items = data.filter(function (m) { return m.name || m.message; });
+
+        if (!items.length) {
+          listEl.textContent = "目前還沒有留言。";
+          return;
+        }
+        listEl.className = "";
+        listEl.textContent = "";
+        items.forEach(function (m) {
+          const box = document.createElement("div");
+          box.className = "msg";
+
+          const who = document.createElement("span");
+          who.className = "who";
+          who.textContent = m.name || "（未填姓名）";
+          box.appendChild(who);
+
+          if (m.company) {
+            const c = document.createElement("span");
+            c.className = "company";
+            c.textContent = m.company;
+            box.appendChild(c);
+          }
+
+          const t = document.createElement("p");
+          t.className = "text";
+          t.textContent = m.message;
+          box.appendChild(t);
+
+          listEl.appendChild(box);
+        });
+      } catch (err) {
+        listEl.className = "empty";
+        listEl.textContent = "讀取失敗：" + err.message;
+      }
+    }
+
+    document.getElementById("refresh").addEventListener("click", loadMessages);
+    loadMessages();
+  </script>
+</body>
+</html>
